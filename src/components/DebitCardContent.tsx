@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ContractAddress } from 'starknet'
+import { AccountInterface, ProviderInterface } from 'starknet'
 import WalletConnectV2 from './WalletConnectV2'
 import { CONTRACT_ADDRESSES } from '@/config/contracts'
 
@@ -9,8 +9,8 @@ interface DebitCardContentProps {}
 
 const DebitCardContent: React.FC<DebitCardContentProps> = () => {
   // Wallet connection states
-  const [account, setAccount] = useState<ContractAddress | null>(null)
-  const [provider, setProvider] = useState<any>(null)
+  const [account, setAccount] = useState<AccountInterface | null>(null)
+  const [provider, setProvider] = useState<ProviderInterface | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
@@ -31,7 +31,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
   const [processingFee, setProcessingFee] = useState<string>('2.5')
 
   // Handle wallet connection
-  const handleAccountChange = (newAccount: ContractAddress | null) => {
+  const handleAccountChange = (newAccount: AccountInterface | null) => {
     setAccount(newAccount)
     if (!newAccount) {
       setProvider(null)
@@ -41,7 +41,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
     }
   }
 
-  const handleProviderChange = (newProvider: any) => {
+  const handleProviderChange = (newProvider: ProviderInterface | null) => {
     setProvider(newProvider)
   }
 
@@ -188,7 +188,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
               <div className="mt-4 p-4 bg-success/10 rounded-lg">
                 <p className="text-success font-medium">Wallet Connected</p>
                 <p className="text-sm text-base-content/70 break-all">
-                  {account.toString()}
+                  {account.address}
                 </p>
               </div>
             )}
