@@ -13,9 +13,13 @@ export const CONTRACT_ADDRESSES = {
   STRK: '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d',
   ETH: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c7b7f092bf2403c5ef04',
   
+  // MintDebitCard contract (placeholder - will be updated after deployment)
+  MINT_DEBIT_CARD: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  
   // Class hashes
   VAULT_POINTS_CLASS_HASH: '0x59a725d42d056d6a505c4e36d012176332454ce1d1d3b26d6ef77a72ef8bc57',
-  OLYMPAY_VAULT_CLASS_HASH: '0x2aef5406910847d9fc471b89ae089fcb8edcd79fdb53a1f9eaa0fc8e60e193b'
+  OLYMPAY_VAULT_CLASS_HASH: '0x2aef5406910847d9fc471b89ae089fcb8edcd79fdb53a1f9eaa0fc8e60e193b',
+  MINT_DEBIT_CARD_CLASS_HASH: '0x3b6c73317ba973503e9768df0837ca4905c7007ed5d503fdf9c0fff05938fe9'
 }
 
 // USDC ABI (simplified for our use case)
@@ -199,6 +203,76 @@ export const TOKEN_CONFIG = {
     name: 'Ethereum'
   }
 }
+
+// MintDebitCard ABI
+export const MINT_DEBIT_CARD_ABI = [
+  {
+    "name": "process_debit_card_deposit",
+    "type": "function",
+    "inputs": [
+      { "name": "user_address", "type": "felt" },
+      { "name": "amount", "type": "Uint256" },
+      { "name": "stripe_payment_id", "type": "felt" }
+    ],
+    "outputs": [],
+    "stateMutability": "external"
+  },
+  {
+    "name": "transfer_usdc_to_user",
+    "type": "function",
+    "inputs": [
+      { "name": "user_address", "type": "felt" },
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "external"
+  },
+  {
+    "name": "get_usdc_balance",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      { "name": "balance", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "get_processing_fee_percent",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      { "name": "fee_percent", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "get_max_deposit_per_tx",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      { "name": "max_deposit", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "get_total_processed_amount",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      { "name": "total_amount", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "get_processed_payments_count",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      { "name": "count", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  }
+]
 
 // Transaction limits
 export const LIMITS = {
