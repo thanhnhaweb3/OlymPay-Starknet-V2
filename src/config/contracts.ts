@@ -1,52 +1,212 @@
-// Contract addresses for Sepolia testnet
+// Contract addresses from deployment
 export const CONTRACT_ADDRESSES = {
+  // USDC on Sepolia (testnet) - Updated correct address
   USDC: '0x053b40a647cedfca6ca84f542a0fe36736031905a9639a7f19a3c1e66bfd5080',
-  SPIKO_TBILLS: '0x0644cde05c78a12f5a3c71ab3fd87151db57a74c8db06442228d9c15b161c8ba',
-  STRK: '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d', // STRK native token
-  ETH: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7', // ETH on Starknet
-  VAULT: '0x0' // Update this after deploying the vault contract
+  
+  // Our deployed contracts
+  VAULT_POINTS: '0x04a438e74431af323aa014efb79849143bce54c300efbdb6d2447361be2aa1cd',
+  OLYMPAY_VAULT: '0x02ff5b07bc8c99d18770e4fb5ee7c7874629741f274bfef3a613911291efef88',
+  VAULT: '0x02ff5b07bc8c99d18770e4fb5ee7c7874629741f274bfef3a613911291efef88', // Same as OLYMPAY_VAULT
+  
+  // Additional tokens (placeholder addresses for now)
+  SPIKO_TBILLS: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  STRK: '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d',
+  ETH: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c7b7f092bf2403c5ef04',
+  
+  // Class hashes
+  VAULT_POINTS_CLASS_HASH: '0x59a725d42d056d6a505c4e36d012176332454ce1d1d3b26d6ef77a72ef8bc57',
+  OLYMPAY_VAULT_CLASS_HASH: '0x2aef5406910847d9fc471b89ae089fcb8edcd79fdb53a1f9eaa0fc8e60e193b'
 }
 
-// Network configuration
-export const NETWORK_CONFIG = {
-  SEPOLIA_RPC_URL: 'https://starknet-sepolia.public.blastapi.io',
-  CHAIN_ID: 'SN_SEPOLIA'
-}
+// USDC ABI (simplified for our use case)
+export const USDC_ABI = [
+  {
+    "name": "transfer",
+    "type": "function",
+    "inputs": [
+      { "name": "recipient", "type": "felt" },
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [
+      { "name": "success", "type": "felt" }
+    ],
+    "stateMutability": "external"
+  },
+  {
+    "name": "balanceOf",
+    "type": "function",
+    "inputs": [
+      { "name": "account", "type": "felt" }
+    ],
+    "outputs": [
+      { "name": "balance", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "transferFrom",
+    "type": "function",
+    "inputs": [
+      { "name": "sender", "type": "felt" },
+      { "name": "recipient", "type": "felt" },
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [
+      { "name": "success", "type": "felt" }
+    ],
+    "stateMutability": "external"
+  },
+  {
+    "name": "approve",
+    "type": "function",
+    "inputs": [
+      { "name": "spender", "type": "felt" },
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [
+      { "name": "success", "type": "felt" }
+    ],
+    "stateMutability": "external"
+  },
+  {
+    "name": "allowance",
+    "type": "function",
+    "inputs": [
+      { "name": "owner", "type": "felt" },
+      { "name": "spender", "type": "felt" }
+    ],
+    "outputs": [
+      { "name": "remaining", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  }
+]
 
-// Default exchange rate (1 USDC = 1.02 SPIKO)
-export const DEFAULT_EXCHANGE_RATE = 1.02
+// VaultPoints ABI
+export const VAULT_POINTS_ABI = [
+  {
+    "name": "mint",
+    "type": "function",
+    "inputs": [
+      { "name": "to", "type": "felt" },
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "external"
+  },
+  {
+    "name": "burn",
+    "type": "function",
+    "inputs": [
+      { "name": "from", "type": "felt" },
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "external"
+  },
+  {
+    "name": "get_balance_of",
+    "type": "function",
+    "inputs": [
+      { "name": "account", "type": "felt" }
+    ],
+    "outputs": [
+      { "name": "balance", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "get_total_supply",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      { "name": "supply", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  }
+]
 
-// Slippage tolerance (5%)
-export const DEFAULT_SLIPPAGE = 5
+// OlymPayVault ABI
+export const OLYMPAY_VAULT_ABI = [
+  {
+    "name": "stake_usdc_in_vault",
+    "type": "function",
+    "inputs": [
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "external"
+  },
+  {
+    "name": "unstake_usdc_from_vault",
+    "type": "function",
+    "inputs": [
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "external"
+  },
+  {
+    "name": "get_yield_balance",
+    "type": "function",
+    "inputs": [],
+    "outputs": [
+      { "name": "yield", "type": "Uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "name": "set_max_deposit_per_tx",
+    "type": "function",
+    "inputs": [
+      { "name": "new_limit", "type": "Uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "external"
+  }
+]
 
-// Token information
-export const TOKEN_INFO = {
+// Token configuration
+export const TOKEN_CONFIG = {
   USDC: {
-    address: CONTRACT_ADDRESSES.USDC,
-    symbol: 'USDC',
-    name: 'USD Coin',
+    address: '0x053b40a647cedfca6ca84f542a0fe36736031905a9639a7f19a3c1e66bfd5080',
     decimals: 6,
-    icon: '💵'
+    symbol: 'USDC',
+    name: 'USD Coin'
+  },
+  VAULT_POINTS: {
+    address: '0x04a438e74431af323aa014efb79849143bce54c300efbdb6d2447361be2aa1cd',
+    decimals: 18,
+    symbol: 'VP',
+    name: 'Vault Points'
   },
   SPIKO: {
-    address: CONTRACT_ADDRESSES.SPIKO_TBILLS,
-    symbol: 'SPIKO',
-    name: 'Spiko US T-Bills',
+    address: '0x0000000000000000000000000000000000000000000000000000000000000000',
     decimals: 18,
-    icon: '🏦'
+    symbol: 'SPIKO',
+    name: 'Spiko T-Bills'
   },
   STRK: {
-    address: CONTRACT_ADDRESSES.STRK,
-    symbol: 'STRK',
-    name: 'Starknet Token',
+    address: '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d',
     decimals: 18,
-    icon: '⚡'
+    symbol: 'STRK',
+    name: 'Starknet Token'
   },
   ETH: {
-    address: CONTRACT_ADDRESSES.ETH,
-    symbol: 'ETH',
-    name: 'Ethereum',
+    address: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c7b7f092bf2403c5ef04',
     decimals: 18,
-    icon: '🔷'
+    symbol: 'ETH',
+    name: 'Ethereum'
   }
 }
+
+// Transaction limits
+export const LIMITS = {
+  MAX_USDC_DEPOSIT: 100, // 100 USDC
+  MIN_USDC_DEPOSIT: 0.01 // 0.01 USDC
+}
+
+// Legacy exports for backward compatibility
+export const TOKEN_INFO = TOKEN_CONFIG
+export const DEFAULT_EXCHANGE_RATE = 1.0
+export const DEFAULT_SLIPPAGE = 0.5 // 0.5%

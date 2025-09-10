@@ -174,18 +174,8 @@ const Marketplace = () => {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 py-8">
+    <div className="py-20 bg-base-100">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-base-content mb-4">
-            Olympay Marketplace
-          </h1>
-          <p className="text-xl text-base-content/70">
-            Trade USDC and Spiko US T-Bills seamlessly
-          </p>
-        </div>
-
         {/* Wallet Connection */}
         <div className="flex justify-center mb-8">
           <WalletConnectV2 

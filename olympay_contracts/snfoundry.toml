@@ -1,0 +1,10 @@
+# Visit https://foundry-rs.github.io/starknet-foundry/appendix/snfoundry-toml.html
+# and https://foundry-rs.github.io/starknet-foundry/projects/configuration.html for more information
+
+[sncast.default]
+url = "https://starknet-sepolia-rpc.publicnode.com"
+accounts-file = "/Users/thanhnhacoach/.starknet_accounts/starknet_open_zeppelin_accounts.json"
+account = "myaccount"
+wait-params = { timeout = 300, retry-interval = 10 }
+block-explorer = "StarkScan"
+show-explorer-links = true

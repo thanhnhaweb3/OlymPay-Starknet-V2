@@ -1,0 +1,4 @@
+[sncast.myaccount]
+account = "myaccount"
+accounts-file = "/Users/thanhnhacoach/.starknet_accounts/starknet_open_zeppelin_accounts.json"
+url = "https://starknet-sepolia-rpc.publicnode.com"

@@ -9,13 +9,11 @@ const Header = () => {
   const router = useRouter()
 
   const navigationItems = [
-    { name: 'StableCoin', path: '/' },
-    { name: 'On/Off Ramp', path: '/' },
-    { name: 'CCIP', path: '/' },
-    { name: 'RWA', path: '/' },
-    { name: 'Earning', path: '/' },
+    { name: 'Home', path: '/' },
+    { name: 'On-Ramp', path: '/onramp' },
     { name: 'Marketplace', path: '/marketplace' },
-    { name: 'Balance', path: '/balance' }
+    { name: 'Balance', path: '/balance' },
+    { name: 'About', path: '/about' }
   ]
 
   const handleNavigation = (path: string) => {
@@ -29,8 +27,21 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="flex-shrink-0 flex items-center">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center mr-3">
+            <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => handleNavigation('/')}>
+              <img 
+                src="/logo.png" 
+                alt="Olympay Logo" 
+                className="w-10 h-10 mr-3"
+                onError={(e) => {
+                  // Fallback to text logo if image fails to load
+                  e.currentTarget.style.display = 'none'
+                  const fallback = e.currentTarget.nextElementSibling as HTMLElement
+                  if (fallback) {
+                    fallback.style.display = 'flex'
+                  }
+                }}
+              />
+              <div className="w-10 h-10 bg-primary rounded-full items-center justify-center mr-3 hidden">
                 <span className="text-base-100 font-bold text-lg">O</span>
               </div>
               <span className="text-3xl font-bold text-base-content">Olympay</span>
