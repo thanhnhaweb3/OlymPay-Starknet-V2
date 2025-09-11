@@ -19,10 +19,6 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
   // Form states
-  const [cardNumber, setCardNumber] = useState('')
-  const [expiryDate, setExpiryDate] = useState('')
-  const [cvv, setCvv] = useState('')
-  const [cardholderName, setCardholderName] = useState('')
   const [amount, setAmount] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [transactionHash, setTransactionHash] = useState<string | null>(null)
@@ -32,7 +28,6 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
   // Stripe states
   const [isStripeLoading, setIsStripeLoading] = useState(false)
   const [stripeError, setStripeError] = useState<string | null>(null)
-  const [showStripeForm, setShowStripeForm] = useState(false)
 
   // Contract states
   const [contractBalance, setContractBalance] = useState<string>('0')
@@ -309,10 +304,6 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
       setSuccess(`Successfully deposited ${amountNumber} USDC via debit card!`)
 
       // Clear form
-      setCardNumber('')
-      setExpiryDate('')
-      setCvv('')
-      setCardholderName('')
       setAmount('')
 
       // Refresh contract info and user balances
@@ -538,8 +529,8 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
       return
     }
 
-    if (!cardNumber || !expiryDate || !cvv || !cardholderName || !amount) {
-      setError('Please fill in all required fields')
+    if (!amount) {
+      setError('Please enter deposit amount')
       return
     }
 
@@ -589,10 +580,6 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
       await loadUserBalances()
       
       // Clear form
-      setCardNumber('')
-      setExpiryDate('')
-      setCvv('')
-      setCardholderName('')
       setAmount('')
 
     } catch (err: any) {
@@ -603,30 +590,6 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
     }
   }
 
-  // Format card number with spaces
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '')
-    const matches = v.match(/\d{4,16}/g)
-    const match = matches && matches[0] || ''
-    const parts = []
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4))
-    }
-    if (parts.length) {
-      return parts.join(' ')
-    } else {
-      return v
-    }
-  }
-
-  // Format expiry date
-  const formatExpiryDate = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '')
-    if (v.length >= 2) {
-      return v.substring(0, 2) + '/' + v.substring(2, 4)
-    }
-    return v
-  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -657,36 +620,6 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
             <div className="stat">
               <div className="stat-title">Contract Balance</div>
               <div className="stat-value text-primary">{contractBalance} USDC</div>
-              <div className="stat-actions space-y-1">
-                <button
-                  className="btn btn-xs btn-secondary w-full"
-                  onClick={setUSDCAddress}
-                  disabled={isProcessing || !account}
-                >
-                  {isProcessing ? 'Setting...' : 'Set USDC Address'}
-                </button>
-                <button
-                  className="btn btn-xs btn-primary w-full"
-                  onClick={loadUSDCIntoContract}
-                  disabled={isProcessing || !account}
-                >
-                  {isProcessing ? 'Loading...' : 'Load 100 USDC'}
-                </button>
-                <button
-                  className="btn btn-xs btn-warning w-full"
-                  onClick={() => withdrawUSDC(50)}
-                  disabled={isProcessing || !account}
-                >
-                  {isProcessing ? 'Withdrawing...' : 'Withdraw 50 USDC'}
-                </button>
-                <button
-                  className="btn btn-xs btn-error w-full"
-                  onClick={withdrawAllUSDC}
-                  disabled={isProcessing || !account}
-                >
-                  {isProcessing ? 'Withdrawing...' : 'Withdraw All'}
-                </button>
-              </div>
             </div>
             <div className="stat">
               <div className="stat-title">Max Deposit</div>
@@ -818,61 +751,6 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
           <div className="card-body">
             <h2 className="card-title text-primary">Debit Card Information</h2>
             
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Card Number</span>
-              </label>
-              <input
-                type="text"
-                placeholder="4242 4242 4242 4242"
-                className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                maxLength={19}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="form-control w-full">
-                <label className="label">
-                  <span className="label-text">Expiry Date</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="MM/YY"
-                  className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(formatExpiryDate(e.target.value))}
-                  maxLength={5}
-                />
-              </div>
-              <div className="form-control w-full">
-                <label className="label">
-                  <span className="label-text">CVV</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="123"
-                  className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  value={cvv}
-                  onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').substring(0, 4))}
-                  maxLength={4}
-                />
-              </div>
-            </div>
-
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Cardholder Name</span>
-              </label>
-              <input
-                type="text"
-                placeholder="John Doe"
-                className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                value={cardholderName}
-                onChange={(e) => setCardholderName(e.target.value)}
-              />
-            </div>
 
             <div className="form-control w-full">
               <label className="label">
@@ -906,30 +784,14 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
               </div>
             )}
 
-            {!showStripeForm ? (
-              <button
-                className="btn btn-primary w-full mt-4"
-                onClick={() => setShowStripeForm(true)}
-                disabled={!account || !amount || parseFloat(amount) <= 0}
-              >
-                Pay with Stripe & Deposit USDC
-              </button>
-            ) : (
-              <div className="mt-4">
-                <StripePaymentForm
-                  amount={parseFloat(amount) || 0}
-                  onSuccess={handleStripeSuccess}
-                  onError={handleStripeError}
-                  onLoading={handleStripeLoading}
-                />
-                <button
-                  className="btn btn-ghost w-full mt-2"
-                  onClick={() => setShowStripeForm(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
+            <div className="mt-4">
+              <StripePaymentForm
+                amount={parseFloat(amount) || 0}
+                onSuccess={handleStripeSuccess}
+                onError={handleStripeError}
+                onLoading={handleStripeLoading}
+              />
+            </div>
           </div>
         </div>
       </div>

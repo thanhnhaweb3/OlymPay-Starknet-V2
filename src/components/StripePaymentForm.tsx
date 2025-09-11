@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { loadStripe } from '@stripe/stripe-js'
+import { createPaymentIntent, confirmPayment } from '@/utils/stripe'
 
 interface StripePaymentFormProps {
   amount: number
@@ -47,19 +49,59 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({ amount, onSuccess
     onLoading(true)
 
     try {
-      // For testing, we'll simulate a successful payment
-      // In production, you would integrate with real Stripe API
+      // Create payment intent
+      const paymentIntent = await createPaymentIntent({
+        amount: amount * 100, // Convert to cents
+        currency: 'usd',
+        metadata: {
+          source: 'olympay_debit_card'
+        }
+      })
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      if (!paymentIntent) {
+        throw new Error('Failed to create payment intent')
+      }
 
-      // Generate mock payment intent ID
-      const paymentIntentId = `pi_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      // Load Stripe
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+      
+      if (!stripe) {
+        throw new Error('Failed to load Stripe')
+      }
 
-      // Simulate successful payment
-      onSuccess(paymentIntentId)
+      // Confirm payment with card details
+      const result = await confirmPayment(stripe, paymentIntent.id, {
+        payment_method: {
+          card: {
+            number: cleanCardNumber,
+            exp_month: parseInt(month),
+            exp_year: parseInt('20' + year),
+            cvc: cvv,
+          },
+          billing_details: {
+            name: cardholderName,
+          },
+        },
+      })
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Payment failed')
+      }
+
+      // Check if payment was successful
+      if ('paymentIntent' in result && result.paymentIntent) {
+        const paymentIntent = result.paymentIntent as any
+        if (paymentIntent.status === 'succeeded') {
+          onSuccess(paymentIntent.id)
+        } else {
+          throw new Error('Payment was not successful')
+        }
+      } else {
+        throw new Error('Payment was not successful')
+      }
 
     } catch (error) {
+      console.error('Stripe payment error:', error)
       onError(error instanceof Error ? error.message : 'Payment failed')
     } finally {
       onLoading(false)
