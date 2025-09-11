@@ -13,8 +13,8 @@ export const CONTRACT_ADDRESSES = {
   STRK: '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d',
   ETH: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c7b7f092bf2403c5ef04',
   
-  // MintDebitCard contract (placeholder - will be updated after deployment)
-  MINT_DEBIT_CARD: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  // MintDebitCard contract (deployed)
+  MINT_DEBIT_CARD: '0x02411a5de9df026e5faac7f2ade90dd26f0c05fd0171c428df4d156ffbeb2456',
   
   // Class hashes
   VAULT_POINTS_CLASS_HASH: '0x59a725d42d056d6a505c4e36d012176332454ce1d1d3b26d6ef77a72ef8bc57',

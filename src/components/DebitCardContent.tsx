@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AccountInterface, ProviderInterface } from 'starknet'
+import { AccountInterface, ProviderInterface, Contract, cairo } from 'starknet'
 import WalletConnectV2 from './WalletConnectV2'
-import { CONTRACT_ADDRESSES } from '@/config/contracts'
+import { CONTRACT_ADDRESSES, MINT_DEBIT_CARD_ABI } from '@/config/contracts'
 
 interface DebitCardContentProps {}
 
@@ -54,12 +54,33 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
 
   const loadContractInfo = async () => {
     try {
-      // In a real implementation, these would be loaded from the contract
-      setContractBalance('1000000') // 1M USDC
-      setMaxDeposit('100') // 100 USDC max per transaction
-      setProcessingFee('2.5') // 2.5% processing fee
+      if (!provider) return
+
+      // Create contract instance
+      const contract = new Contract(
+        MINT_DEBIT_CARD_ABI,
+        CONTRACT_ADDRESSES.MINT_DEBIT_CARD,
+        provider
+      )
+
+      // Load real data from contract
+      const [usdcBalance, maxDepositAmount, processingFeePercent] = await Promise.all([
+        contract.get_usdc_balance(),
+        contract.get_max_deposit_per_tx(),
+        contract.get_processing_fee_percent()
+      ])
+
+      // Convert from wei to readable format
+      setContractBalance((Number(usdcBalance.low) / 1e6).toFixed(2)) // USDC has 6 decimals
+      setMaxDeposit((Number(maxDepositAmount.low) / 1e6).toFixed(2))
+      setProcessingFee((Number(processingFeePercent.low) / 10).toFixed(1)) // Fee is in basis points (250 = 2.5%)
+
     } catch (err) {
       console.error('Error loading contract info:', err)
+      // Fallback to default values if contract call fails
+      setContractBalance('0')
+      setMaxDeposit('100')
+      setProcessingFee('2.5')
     }
   }
 
@@ -86,22 +107,34 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
     setSuccess(null)
 
     try {
-      // Simulate Stripe API call
+      // Create contract instance with account for transactions
+      const contract = new Contract(
+        MINT_DEBIT_CARD_ABI,
+        CONTRACT_ADDRESSES.MINT_DEBIT_CARD,
+        account
+      )
+
+      // Generate unique Stripe payment ID
       const stripePaymentId = `pi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      // In a real implementation, this would:
-      // 1. Call Stripe API to process the debit card payment
-      // 2. Wait for Stripe webhook confirmation
-      // 3. Call the mint_debit_card contract to process the deposit
-      // 4. Transfer USDC to the user's wallet
+      // Convert amount to wei (USDC has 6 decimals)
+      const amountWei = cairo.uint256(Math.floor(amountNumber * 1e6))
 
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // Call contract function to process debit card deposit
+      const result = await contract.process_debit_card_deposit(
+        account.address,
+        amountWei,
+        stripePaymentId
+      )
 
-      // Simulate successful transaction
-      const mockTransactionHash = `0x${Math.random().toString(16).substr(2, 64)}`
-      setTransactionHash(mockTransactionHash)
+      // Wait for transaction to be confirmed
+      await provider.waitForTransaction(result.transaction_hash)
+
+      setTransactionHash(result.transaction_hash)
       setSuccess(`Successfully processed ${amount} USDC deposit via debit card!`)
+      
+      // Refresh contract info
+      await loadContractInfo()
       
       // Clear form
       setCardNumber('')
@@ -111,6 +144,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
       setAmount('')
 
     } catch (err: any) {
+      console.error('Deposit error:', err)
       setError(err.message || 'Failed to process debit card deposit')
     } finally {
       setIsProcessing(false)
@@ -157,7 +191,16 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
       {/* Contract Information */}
       <div className="card bg-base-100 shadow-xl mb-8">
         <div className="card-body">
-          <h2 className="card-title text-primary">Contract Information</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="card-title text-primary">Contract Information</h2>
+            <button 
+              className="btn btn-sm btn-outline btn-primary"
+              onClick={loadContractInfo}
+              disabled={!provider}
+            >
+              Refresh
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="stat">
               <div className="stat-title">Contract Balance</div>
@@ -171,6 +214,19 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
               <div className="stat-title">Processing Fee</div>
               <div className="stat-value text-accent">{processingFee}%</div>
             </div>
+          </div>
+          <div className="mt-4 text-sm text-base-content/60">
+            <p>Contract Address: <span className="font-mono break-all">{CONTRACT_ADDRESSES.MINT_DEBIT_CARD}</span></p>
+            <p>
+              <a 
+                href={`https://sepolia.starkscan.co/contract/${CONTRACT_ADDRESSES.MINT_DEBIT_CARD}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link link-primary"
+              >
+                View on Starkscan
+              </a>
+            </p>
           </div>
         </div>
       </div>
