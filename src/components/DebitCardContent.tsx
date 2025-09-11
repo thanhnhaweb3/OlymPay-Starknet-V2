@@ -104,25 +104,31 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
     setIsLoadingBalances(true)
     try {
       // Load USDC balance
-      const usdcBalance = await routerToUse.getTokenBalance(
-        CONTRACT_ADDRESSES.USDC,
-        account.address
-      )
-      setUserUsdcBalance(formatBalanceWithDecimals(usdcBalance, TOKEN_CONFIG.USDC.decimals))
+      try {
+        const usdcBalance = await routerToUse.getTokenBalance(
+          CONTRACT_ADDRESSES.USDC,
+          account.address
+        )
+        setUserUsdcBalance(formatBalanceWithDecimals(usdcBalance, TOKEN_CONFIG.USDC.decimals))
+      } catch (error) {
+        console.error('Error loading USDC balance:', error)
+        setUserUsdcBalance('0')
+      }
 
       // Load STRK balance
-      const strkBalance = await routerToUse.getTokenBalance(
-        CONTRACT_ADDRESSES.STRK,
-        account.address
-      )
-      setUserStrkBalance(formatBalanceWithDecimals(strkBalance, TOKEN_CONFIG.STRK.decimals))
+      try {
+        const strkBalance = await routerToUse.getTokenBalance(
+          CONTRACT_ADDRESSES.STRK,
+          account.address
+        )
+        setUserStrkBalance(formatBalanceWithDecimals(strkBalance, TOKEN_CONFIG.STRK.decimals))
+      } catch (error) {
+        console.error('Error loading STRK balance:', error)
+        setUserStrkBalance('0')
+      }
 
-      // Load ETH balance
-      const ethBalance = await routerToUse.getTokenBalance(
-        CONTRACT_ADDRESSES.ETH,
-        account.address
-      )
-      setUserEthBalance(formatBalanceWithDecimals(ethBalance, TOKEN_CONFIG.ETH.decimals))
+      // Skip ETH balance for now as contract doesn't exist on Sepolia
+      setUserEthBalance('0')
 
     } catch (error) {
       console.error('Error loading user balances:', error)
@@ -168,12 +174,16 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
       const stripePaymentId = `pi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
       // Convert amount to wei (USDC has 6 decimals)
-      const amountWei = cairo.uint256(Math.floor(amountNumber * 1e6))
+      const amountWei = BigInt(Math.floor(amountNumber * 1e6))
+      const amountUint256 = {
+        low: (amountWei & BigInt('0xffffffffffffffffffffffffffffffff')).toString(),
+        high: (amountWei >> BigInt(128)).toString()
+      }
 
       // Call contract function to process debit card deposit
       const result = await contract.process_debit_card_deposit(
         account.address,
-        amountWei,
+        amountUint256,
         stripePaymentId
       )
 
@@ -358,8 +368,8 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
                     </div>
                   </div>
 
-                  {/* ETH Balance */}
-                  <div className="bg-accent/10 border border-accent/20 rounded-lg p-3">
+                  {/* ETH Balance - Temporarily disabled as contract doesn't exist on Sepolia */}
+                  {/* <div className="bg-accent/10 border border-accent/20 rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 bg-accent rounded-full"></div>
@@ -375,7 +385,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}
