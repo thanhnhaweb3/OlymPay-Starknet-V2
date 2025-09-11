@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { AccountInterface, ProviderInterface, Contract, cairo } from 'starknet'
 import WalletConnectV2 from './WalletConnectV2'
-import { CONTRACT_ADDRESSES, MINT_DEBIT_CARD_ABI } from '@/config/contracts'
+import { CONTRACT_ADDRESSES, MINT_DEBIT_CARD_ABI, TOKEN_CONFIG } from '@/config/contracts'
+import { SwapRouter } from '@/utils/swapRouter'
+import { formatBalanceWithDecimals } from '@/utils/serialization'
 
 interface DebitCardContentProps {}
 
@@ -29,6 +31,13 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
   const [contractBalance, setContractBalance] = useState<string>('0')
   const [maxDeposit, setMaxDeposit] = useState<string>('100')
   const [processingFee, setProcessingFee] = useState<string>('2.5')
+  
+  // Token balance states
+  const [userUsdcBalance, setUserUsdcBalance] = useState<string>('0')
+  const [userStrkBalance, setUserStrkBalance] = useState<string>('0')
+  const [userEthBalance, setUserEthBalance] = useState<string>('0')
+  const [swapRouter, setSwapRouter] = useState<SwapRouter | null>(null)
+  const [isLoadingBalances, setIsLoadingBalances] = useState(false)
 
   // Handle wallet connection
   const handleAccountChange = (newAccount: AccountInterface | null) => {
@@ -45,10 +54,13 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
     setProvider(newProvider)
   }
 
-  // Load contract information
+  // Initialize SwapRouter and load data when account and provider are available
   useEffect(() => {
     if (account && provider) {
+      const router = new SwapRouter(account, provider)
+      setSwapRouter(router)
       loadContractInfo()
+      loadUserBalances(router)
     }
   }, [account, provider])
 
@@ -81,6 +93,44 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
       setContractBalance('0')
       setMaxDeposit('100')
       setProcessingFee('2.5')
+    }
+  }
+
+  // Load user token balances
+  const loadUserBalances = async (router?: SwapRouter) => {
+    const routerToUse = router || swapRouter
+    if (!routerToUse || !account) return
+
+    setIsLoadingBalances(true)
+    try {
+      // Load USDC balance
+      const usdcBalance = await routerToUse.getTokenBalance(
+        CONTRACT_ADDRESSES.USDC,
+        account.address
+      )
+      setUserUsdcBalance(formatBalanceWithDecimals(usdcBalance, TOKEN_CONFIG.USDC.decimals))
+
+      // Load STRK balance
+      const strkBalance = await routerToUse.getTokenBalance(
+        CONTRACT_ADDRESSES.STRK,
+        account.address
+      )
+      setUserStrkBalance(formatBalanceWithDecimals(strkBalance, TOKEN_CONFIG.STRK.decimals))
+
+      // Load ETH balance
+      const ethBalance = await routerToUse.getTokenBalance(
+        CONTRACT_ADDRESSES.ETH,
+        account.address
+      )
+      setUserEthBalance(formatBalanceWithDecimals(ethBalance, TOKEN_CONFIG.ETH.decimals))
+
+    } catch (error) {
+      console.error('Error loading user balances:', error)
+      setUserUsdcBalance('0')
+      setUserStrkBalance('0')
+      setUserEthBalance('0')
+    } finally {
+      setIsLoadingBalances(false)
     }
   }
 
@@ -133,8 +183,9 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
       setTransactionHash(result.transaction_hash)
       setSuccess(`Successfully processed ${amount} USDC deposit via debit card!`)
       
-      // Refresh contract info
+      // Refresh contract info and user balances
       await loadContractInfo()
+      await loadUserBalances()
       
       // Clear form
       setCardNumber('')
@@ -241,11 +292,91 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
               onProviderChange={handleProviderChange}
             />
             {account && (
-              <div className="mt-4 p-4 bg-success/10 rounded-lg">
-                <p className="text-success font-medium">Wallet Connected</p>
-                <p className="text-sm text-base-content/70 break-all">
-                  {account.address}
-                </p>
+              <div className="mt-4 space-y-4">
+                <div className="p-4 bg-success/10 rounded-lg">
+                  <p className="text-success font-medium">Wallet Connected</p>
+                  <p className="text-sm text-base-content/70 break-all">
+                    {account.address}
+                  </p>
+                </div>
+
+                {/* Token Balances */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-base-content">Token Balances</h3>
+                    <button
+                      onClick={() => loadUserBalances()}
+                      disabled={isLoadingBalances}
+                      className="btn btn-ghost btn-sm"
+                      title="Refresh balances"
+                    >
+                      {isLoadingBalances ? (
+                        <span className="loading loading-spinner loading-xs"></span>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* USDC Balance */}
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-primary rounded-full"></div>
+                        <div>
+                          <span className="text-primary font-medium">USDC</span>
+                          <p className="text-sm text-base-content/70">
+                            {isLoadingBalances ? (
+                              <span className="loading loading-spinner loading-xs"></span>
+                            ) : (
+                              `${userUsdcBalance} USDC`
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* STRK Balance */}
+                  <div className="bg-secondary/10 border border-secondary/20 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-secondary rounded-full"></div>
+                        <div>
+                          <span className="text-secondary font-medium">STRK</span>
+                          <p className="text-sm text-base-content/70">
+                            {isLoadingBalances ? (
+                              <span className="loading loading-spinner loading-xs"></span>
+                            ) : (
+                              `${userStrkBalance} STRK`
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ETH Balance */}
+                  <div className="bg-accent/10 border border-accent/20 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-accent rounded-full"></div>
+                        <div>
+                          <span className="text-accent font-medium">ETH</span>
+                          <p className="text-sm text-base-content/70">
+                            {isLoadingBalances ? (
+                              <span className="loading loading-spinner loading-xs"></span>
+                            ) : (
+                              `${userEthBalance} ETH`
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
