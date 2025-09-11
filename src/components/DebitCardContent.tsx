@@ -262,8 +262,8 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
               </label>
               <input
                 type="text"
-                placeholder="1234 5678 9012 3456"
-                className="input input-bordered w-full"
+                placeholder="4242 4242 4242 4242"
+                className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 value={cardNumber}
                 onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                 maxLength={19}
@@ -278,7 +278,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
                 <input
                   type="text"
                   placeholder="MM/YY"
-                  className="input input-bordered w-full"
+                  className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   value={expiryDate}
                   onChange={(e) => setExpiryDate(formatExpiryDate(e.target.value))}
                   maxLength={5}
@@ -291,7 +291,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
                 <input
                   type="text"
                   placeholder="123"
-                  className="input input-bordered w-full"
+                  className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   value={cvv}
                   onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').substring(0, 4))}
                   maxLength={4}
@@ -306,7 +306,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
               <input
                 type="text"
                 placeholder="John Doe"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 value={cardholderName}
                 onChange={(e) => setCardholderName(e.target.value)}
               />
@@ -320,7 +320,7 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
               <input
                 type="number"
                 placeholder="10.00"
-                className="input input-bordered w-full"
+                className="input input-bordered w-full focus:input-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 min="0.01"
