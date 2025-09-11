@@ -6,6 +6,7 @@ import WalletConnectV2 from './WalletConnectV2'
 import { CONTRACT_ADDRESSES, MINT_DEBIT_CARD_ABI, TOKEN_CONFIG } from '@/config/contracts'
 import { SwapRouter } from '@/utils/swapRouter'
 import { formatBalanceWithDecimals } from '@/utils/serialization'
+import { getStripe, createPaymentIntent, confirmPayment } from '@/utils/stripe'
 
 interface DebitCardContentProps {}
 
@@ -26,6 +27,10 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
   const [transactionHash, setTransactionHash] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  
+  // Stripe states
+  const [isStripeLoading, setIsStripeLoading] = useState(false)
+  const [stripeError, setStripeError] = useState<string | null>(null)
 
   // Contract states
   const [contractBalance, setContractBalance] = useState<string>('0')
@@ -140,7 +145,136 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
     }
   }
 
-  // Handle debit card deposit
+  // Handle Stripe payment
+  const handleStripePayment = async () => {
+    if (!account) {
+      setError('Please connect your wallet first')
+      return
+    }
+
+    const amountNumber = parseFloat(amount)
+    if (isNaN(amountNumber) || amountNumber <= 0) {
+      setError('Please enter a valid amount')
+      return
+    }
+
+    if (amountNumber > parseFloat(maxDeposit)) {
+      setError(`Amount cannot exceed ${maxDeposit} USDC`)
+      return
+    }
+
+    setIsStripeLoading(true)
+    setStripeError(null)
+    setError(null)
+
+    try {
+      // Create payment intent
+      const { clientSecret, paymentIntentId } = await createPaymentIntent({
+        amount: amountNumber,
+        currency: 'usd',
+        metadata: {
+          user_address: account.address,
+          wallet_type: 'starknet',
+          amount_usdc: amountNumber.toString(),
+        },
+      })
+
+      // Initialize Stripe
+      const stripe = await getStripe()
+      if (!stripe) {
+        throw new Error('Stripe failed to initialize')
+      }
+
+      // Confirm payment
+      const result = await stripe.confirmPayment({
+        clientSecret,
+        confirmParams: {
+          payment_method_data: {
+            billing_details: {
+              name: cardholderName,
+            },
+          },
+          return_url: `${window.location.origin}/debitcard?payment=success&intent=${paymentIntentId}`,
+        },
+      })
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Payment failed')
+      }
+
+      // If we get here, payment was successful
+      setSuccess(`Payment successful! Processing ${amountNumber} USDC deposit...`)
+      
+      // Now call the smart contract
+      await handleSmartContractDeposit(paymentIntentId)
+
+    } catch (error) {
+      console.error('Stripe payment error:', error)
+      setStripeError(error instanceof Error ? error.message : 'Payment failed')
+    } finally {
+      setIsStripeLoading(false)
+    }
+  }
+
+  // Handle smart contract deposit after successful Stripe payment
+  const handleSmartContractDeposit = async (stripePaymentId: string) => {
+    if (!account || !provider) {
+      setError('Wallet not connected')
+      return
+    }
+
+    const amountNumber = parseFloat(amount)
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      // Create contract instance
+      const contract = new Contract(
+        MINT_DEBIT_CARD_ABI,
+        CONTRACT_ADDRESSES.MINT_DEBIT_CARD,
+        provider
+      )
+
+      // Convert amount to wei (USDC has 6 decimals)
+      const amountWei = BigInt(Math.floor(amountNumber * 1e6))
+      const amountUint256 = {
+        low: (amountWei & BigInt('0xffffffffffffffffffffffffffffffff')).toString(),
+        high: (amountWei >> BigInt(128)).toString()
+      }
+
+      // Call contract function to process debit card deposit
+      const result = await contract.process_debit_card_deposit(
+        account.address,
+        amountUint256,
+        stripePaymentId
+      )
+
+      // Wait for transaction to be confirmed
+      await provider.waitForTransaction(result.transaction_hash)
+
+      setTransactionHash(result.transaction_hash)
+      setSuccess(`Successfully deposited ${amountNumber} USDC via debit card!`)
+
+      // Clear form
+      setCardNumber('')
+      setExpiryDate('')
+      setCvv('')
+      setCardholderName('')
+      setAmount('')
+
+      // Refresh contract info and user balances
+      await loadContractInfo()
+      await loadUserBalances()
+
+    } catch (error) {
+      console.error('Smart contract error:', error)
+      setError(error instanceof Error ? error.message : 'Transaction failed')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // Handle debit card deposit (legacy function - now redirects to Stripe)
   const handleDebitCardDeposit = async () => {
     if (!account || !provider) {
       setError('Please connect your wallet first')
@@ -487,19 +621,19 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
 
             <button
               className={`btn btn-primary w-full mt-4 ${
-                isProcessing ? 'loading' : ''
+                isStripeLoading || isProcessing ? 'loading' : ''
               }`}
-              onClick={handleDebitCardDeposit}
-              disabled={!account || isProcessing || !cardNumber || !expiryDate || !cvv || !cardholderName || !amount}
+              onClick={handleStripePayment}
+              disabled={!account || isStripeLoading || isProcessing || !cardNumber || !expiryDate || !cvv || !cardholderName || !amount}
             >
-              {isProcessing ? 'Processing...' : 'Process Debit Card Deposit'}
+              {isStripeLoading ? 'Processing Payment...' : isProcessing ? 'Processing Smart Contract...' : 'Pay with Stripe & Deposit USDC'}
             </button>
           </div>
         </div>
       </div>
 
       {/* Transaction Status */}
-      {(error || success || transactionHash) && (
+      {(error || stripeError || success || transactionHash) && (
         <div className="card bg-base-100 shadow-xl mt-8">
           <div className="card-body">
             <h2 className="card-title text-primary">Transaction Status</h2>
@@ -507,8 +641,17 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
             {error && (
               <div className="alert alert-error">
                 <div>
-                  <div className="font-medium">Error</div>
+                  <div className="font-medium">Smart Contract Error</div>
                   <div className="text-sm">{error}</div>
+                </div>
+              </div>
+            )}
+
+            {stripeError && (
+              <div className="alert alert-warning">
+                <div>
+                  <div className="font-medium">Stripe Payment Error</div>
+                  <div className="text-sm">{stripeError}</div>
                 </div>
               </div>
             )}
