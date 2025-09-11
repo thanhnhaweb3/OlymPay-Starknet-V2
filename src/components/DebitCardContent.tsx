@@ -383,6 +383,97 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
     }
   }
 
+  // Function to withdraw USDC from contract
+  const withdrawUSDC = async (amount: number) => {
+    if (!account || !provider) {
+      setError('Please connect your wallet first')
+      return
+    }
+
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      // Create contract instance
+      const contract = new Contract(
+        MINT_DEBIT_CARD_ABI,
+        CONTRACT_ADDRESSES.MINT_DEBIT_CARD,
+        provider
+      )
+
+      // Convert amount to wei (USDC has 6 decimals)
+      const amountWei = BigInt(amount * 1e6)
+      const amountUint256 = {
+        low: (amountWei & BigInt('0xffffffffffffffffffffffffffffffff')).toString(),
+        high: (amountWei >> BigInt(128)).toString()
+      }
+
+      console.log('Withdrawing USDC from contract:', {
+        amount: amount,
+        amountWei: amountWei.toString(),
+        amountUint256
+      })
+
+      // Call withdraw function
+      const result = await contract.withdraw_usdc(amountUint256)
+
+      // Wait for transaction to be confirmed
+      await provider.waitForTransaction(result.transaction_hash)
+
+      setTransactionHash(result.transaction_hash)
+      setSuccess(`Successfully withdrew ${amount} USDC from contract!`)
+
+      // Refresh contract info
+      await loadContractInfo()
+
+    } catch (error) {
+      console.error('Error withdrawing USDC:', error)
+      setError(error instanceof Error ? error.message : 'Failed to withdraw USDC')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // Function to withdraw all USDC from contract
+  const withdrawAllUSDC = async () => {
+    if (!account || !provider) {
+      setError('Please connect your wallet first')
+      return
+    }
+
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      // Create contract instance
+      const contract = new Contract(
+        MINT_DEBIT_CARD_ABI,
+        CONTRACT_ADDRESSES.MINT_DEBIT_CARD,
+        provider
+      )
+
+      console.log('Withdrawing all USDC from contract')
+
+      // Call withdraw_all function
+      const result = await contract.withdraw_all_usdc()
+
+      // Wait for transaction to be confirmed
+      await provider.waitForTransaction(result.transaction_hash)
+
+      setTransactionHash(result.transaction_hash)
+      setSuccess('Successfully withdrew all USDC from contract!')
+
+      // Refresh contract info
+      await loadContractInfo()
+
+    } catch (error) {
+      console.error('Error withdrawing all USDC:', error)
+      setError(error instanceof Error ? error.message : 'Failed to withdraw all USDC')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   // Function to load USDC into contract (for testing)
   const loadUSDCIntoContract = async () => {
     if (!account || !provider) {
@@ -580,6 +671,20 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
                   disabled={isProcessing || !account}
                 >
                   {isProcessing ? 'Loading...' : 'Load 100 USDC'}
+                </button>
+                <button
+                  className="btn btn-xs btn-warning w-full"
+                  onClick={() => withdrawUSDC(50)}
+                  disabled={isProcessing || !account}
+                >
+                  {isProcessing ? 'Withdrawing...' : 'Withdraw 50 USDC'}
+                </button>
+                <button
+                  className="btn btn-xs btn-error w-full"
+                  onClick={withdrawAllUSDC}
+                  disabled={isProcessing || !account}
+                >
+                  {isProcessing ? 'Withdrawing...' : 'Withdraw All'}
                 </button>
               </div>
             </div>

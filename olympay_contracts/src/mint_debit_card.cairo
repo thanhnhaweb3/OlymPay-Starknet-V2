@@ -16,6 +16,8 @@ pub trait IMintDebitCard<TContractState> {
         stripe_payment_id: felt252
     );
     fn transfer_usdc_to_user(ref self: TContractState, user_address: ContractAddress, amount: u256);
+    fn withdraw_usdc(ref self: TContractState, amount: u256);
+    fn withdraw_all_usdc(ref self: TContractState);
     
     // View functions
     fn get_usdc_balance(self: @TContractState) -> u256;
@@ -149,6 +151,33 @@ pub mod MintDebitCard {
             assert(caller == owner || caller == stripe_processor, 'Unauthorized');
             
             // For now, we'll just log the transfer
+            // In a real implementation, this would call the USDC contract
+            // The actual USDC transfer would be handled by the frontend
+            // after receiving confirmation from this contract
+        }
+
+        fn withdraw_usdc(ref self: ContractState, amount: u256) {
+            let caller = get_caller_address();
+            let owner = self.contract_owner.read();
+            
+            // Only owner can withdraw
+            assert(caller == owner, 'Only owner can withdraw');
+            assert(amount > 0, 'Amount must be positive');
+            
+            // For now, just log the withdrawal
+            // In a real implementation, this would call the USDC contract
+            // The actual USDC transfer would be handled by the frontend
+            // after receiving confirmation from this contract
+        }
+
+        fn withdraw_all_usdc(ref self: ContractState) {
+            let caller = get_caller_address();
+            let owner = self.contract_owner.read();
+            
+            // Only owner can withdraw
+            assert(caller == owner, 'Only owner can withdraw');
+            
+            // For now, just log the withdrawal
             // In a real implementation, this would call the USDC contract
             // The actual USDC transfer would be handled by the frontend
             // after receiving confirmation from this contract

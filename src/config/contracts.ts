@@ -271,6 +271,22 @@ export const MINT_DEBIT_CARD_ABI = [
       { "name": "count", "type": "Uint256" }
     ],
     "stateMutability": "view"
+  },
+  {
+    "name": "withdraw_usdc",
+    "type": "function",
+    "inputs": [
+      { "name": "amount", "type": "Uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "external"
+  },
+  {
+    "name": "withdraw_all_usdc",
+    "type": "function",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "external"
   }
 ]
 
