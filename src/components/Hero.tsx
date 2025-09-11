@@ -4,10 +4,23 @@ const Hero = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Main Headline */}
         <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold mb-8 leading-tight">
-          <span className="text-base-content">Bridge the</span>{' '}
-          <span className="text-secondary">Future.</span>{' '}
+          <span className="text-base-content">Growth</span>{' '}
+          <span className="text-primary">Stablecoin</span>{' '}
+          <span className="text-base-content">with</span>
           <br />
-          <span className="text-primary">Pay with Stability.</span>
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <img 
+              src="/olympay.png" 
+              alt="Olympay" 
+              className="h-16 sm:h-20 lg:h-24 w-auto object-contain"
+            />
+            <span className="text-base-content">on</span>
+            <img 
+              src="/starknet.png" 
+              alt="Starknet" 
+              className="h-16 sm:h-20 lg:h-24 w-auto object-contain"
+            />
+          </div>
         </h1>
 
         {/* Subheading */}
