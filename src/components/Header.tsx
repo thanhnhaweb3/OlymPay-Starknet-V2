@@ -1,27 +1,27 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const router = useRouter()
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
   const navigationItems = [
-    { name: 'StableCoin', path: '/' },
-    { name: 'On/Off Ramp', path: '/' },
-    { name: 'CCIP', path: '/' },
-    { name: 'RWA', path: '/' },
-    { name: 'Earning', path: '/' },
-    { name: 'Marketplace', path: '/marketplace' },
-    { name: 'Balance', path: '/balance' }
-  ]
+    { name: "StableCoin", path: "/" },
+    { name: "On/Off Ramp", path: "/" },
+    { name: "CCIP", path: "/" },
+    { name: "RWA", path: "/" },
+    { name: "Earning", path: "/" },
+    { name: "Marketplace", path: "/marketplace" },
+    { name: "Balance", path: "/balance" },
+  ];
 
   const handleNavigation = (path: string) => {
-    router.push(path)
-    setIsMenuOpen(false)
-  }
+    router.push(path);
+    setIsMenuOpen(false);
+  };
 
   return (
     <header className="bg-base-100 border-b border-base-300">
@@ -33,7 +33,9 @@ const Header = () => {
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center mr-3">
                 <span className="text-base-100 font-bold text-lg">O</span>
               </div>
-              <span className="text-3xl font-bold text-base-content">Olympay</span>
+              <span className="text-3xl font-bold text-base-content">
+                Olympay
+              </span>
             </div>
           </div>
 
@@ -44,7 +46,7 @@ const Header = () => {
                 <button
                   key={item.name}
                   onClick={() => handleNavigation(item.path)}
-                  className="text-base-content hover:text-primary px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200"
+                  className="text-base-content hover:text-primary px-3 py-2 rounded-md text-md font-medium transition-colors duration-200"
                 >
                   {item.name}
                 </button>
@@ -95,7 +97,7 @@ const Header = () => {
         )}
       </nav>
     </header>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;
