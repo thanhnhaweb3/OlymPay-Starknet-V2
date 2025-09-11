@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { AccountInterface, ProviderInterface, Contract, cairo } from 'starknet'
 import WalletConnectV2 from './WalletConnectV2'
-import { CONTRACT_ADDRESSES, MINT_DEBIT_CARD_ABI, TOKEN_CONFIG } from '@/config/contracts'
+import { CONTRACT_ADDRESSES, MINT_DEBIT_CARD_ABI, USDC_ABI, TOKEN_CONFIG } from '@/config/contracts'
 import { SwapRouter } from '@/utils/swapRouter'
 import { formatBalanceWithDecimals } from '@/utils/serialization'
 import { getStripe, createPaymentIntent, confirmPayment } from '@/utils/stripe'
@@ -82,6 +82,8 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
         provider
       )
 
+      console.log('Loading contract info from:', CONTRACT_ADDRESSES.MINT_DEBIT_CARD)
+
       // Load real data from contract
       const [usdcBalance, maxDepositAmount, processingFeePercent] = await Promise.all([
         contract.get_usdc_balance(),
@@ -89,10 +91,75 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
         contract.get_processing_fee_percent()
       ])
 
+      console.log('Contract data received:', {
+        usdcBalance,
+        maxDepositAmount,
+        processingFeePercent
+      })
+
+      // Helper function to convert Uint256 to number
+      const uint256ToNumber = (uint256: any) => {
+        if (!uint256) return 0
+        
+        console.log('Converting uint256:', uint256)
+        
+        // Handle both object and array formats
+        if (typeof uint256 === 'object') {
+          if (uint256.low !== undefined && uint256.high !== undefined) {
+            // Object format: {low: string, high: string}
+            const low = BigInt(uint256.low || '0')
+            const high = BigInt(uint256.high || '0')
+            const result = low + (high << BigInt(128))
+            console.log('Object format result:', result.toString())
+            return Number(result)
+          } else if (Array.isArray(uint256)) {
+            // Array format: [low, high]
+            const low = BigInt(uint256[0] || '0')
+            const high = BigInt(uint256[1] || '0')
+            const result = low + (high << BigInt(128))
+            console.log('Array format result:', result.toString())
+            return Number(result)
+          }
+        }
+        
+        // Direct number or string
+        const result = Number(uint256 || 0)
+        console.log('Direct format result:', result)
+        return result
+      }
+
       // Convert from wei to readable format
-      setContractBalance((Number(usdcBalance.low) / 1e6).toFixed(2)) // USDC has 6 decimals
-      setMaxDeposit((Number(maxDepositAmount.low) / 1e6).toFixed(2))
-      setProcessingFee((Number(processingFeePercent.low) / 10).toFixed(1)) // Fee is in basis points (250 = 2.5%)
+      const usdcBalanceNumber = uint256ToNumber(usdcBalance)
+      const maxDepositNumber = uint256ToNumber(maxDepositAmount)
+      const processingFeeNumber = uint256ToNumber(processingFeePercent)
+
+      console.log('Converted numbers:', {
+        usdcBalanceNumber,
+        maxDepositNumber,
+        processingFeeNumber
+      })
+
+      // Convert from wei to readable format
+      // USDC balance: already in wei (6 decimals)
+      setContractBalance((usdcBalanceNumber / 1e6).toFixed(2))
+      
+      // Max deposit: check if it's in wei or already in USDC units
+      if (maxDepositNumber > 1e12) {
+        // It's in wei, convert to USDC
+        setMaxDeposit((maxDepositNumber / 1e6).toFixed(2))
+      } else {
+        // It's already in USDC units
+        setMaxDeposit(maxDepositNumber.toFixed(2))
+      }
+      
+      // Processing fee: check if it's in basis points or percentage
+      if (processingFeeNumber > 100) {
+        // It's in basis points (e.g., 250 = 2.5%)
+        setProcessingFee((processingFeeNumber / 100).toFixed(1))
+      } else {
+        // It's already in percentage
+        setProcessingFee(processingFeeNumber.toFixed(1))
+      }
 
     } catch (err) {
       console.error('Error loading contract info:', err)
@@ -276,6 +343,103 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
     setIsStripeLoading(loading)
   }
 
+  // Function to set USDC token address in contract
+  const setUSDCAddress = async () => {
+    if (!account || !provider) {
+      setError('Please connect your wallet first')
+      return
+    }
+
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      // Create contract instance
+      const contract = new Contract(
+        MINT_DEBIT_CARD_ABI,
+        CONTRACT_ADDRESSES.MINT_DEBIT_CARD,
+        provider
+      )
+
+      console.log('Setting USDC address:', CONTRACT_ADDRESSES.USDC)
+
+      // Set USDC token address
+      const result = await contract.set_usdc_token(CONTRACT_ADDRESSES.USDC)
+
+      // Wait for transaction to be confirmed
+      await provider.waitForTransaction(result.transaction_hash)
+
+      setTransactionHash(result.transaction_hash)
+      setSuccess('Successfully set USDC token address!')
+
+      // Refresh contract info
+      await loadContractInfo()
+
+    } catch (error) {
+      console.error('Error setting USDC address:', error)
+      setError(error instanceof Error ? error.message : 'Failed to set USDC address')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // Function to load USDC into contract (for testing)
+  const loadUSDCIntoContract = async () => {
+    if (!account || !provider) {
+      setError('Please connect your wallet first')
+      return
+    }
+
+    const amount = 100 // Load 100 USDC for testing
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      // Create USDC contract instance
+      const usdcContract = new Contract(
+        USDC_ABI,
+        CONTRACT_ADDRESSES.USDC,
+        provider
+      )
+
+      // Convert amount to wei (USDC has 6 decimals)
+      const amountWei = BigInt(amount * 1e6)
+      const amountUint256 = {
+        low: (amountWei & BigInt('0xffffffffffffffffffffffffffffffff')).toString(),
+        high: (amountWei >> BigInt(128)).toString()
+      }
+
+      console.log('Transferring USDC to contract:', {
+        from: account.address,
+        to: CONTRACT_ADDRESSES.MINT_DEBIT_CARD,
+        amount: amount,
+        amountWei: amountWei.toString(),
+        amountUint256
+      })
+
+      // Transfer USDC to the contract
+      const result = await usdcContract.transfer(
+        CONTRACT_ADDRESSES.MINT_DEBIT_CARD,
+        amountUint256
+      )
+
+      // Wait for transaction to be confirmed
+      await provider.waitForTransaction(result.transaction_hash)
+
+      setTransactionHash(result.transaction_hash)
+      setSuccess(`Successfully loaded ${amount} USDC into contract!`)
+
+      // Refresh contract info
+      await loadContractInfo()
+
+    } catch (error) {
+      console.error('Error loading USDC into contract:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load USDC')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   // Handle debit card deposit (legacy function - now redirects to Stripe)
   const handleDebitCardDeposit = async () => {
     if (!account || !provider) {
@@ -402,6 +566,22 @@ const DebitCardContent: React.FC<DebitCardContentProps> = () => {
             <div className="stat">
               <div className="stat-title">Contract Balance</div>
               <div className="stat-value text-primary">{contractBalance} USDC</div>
+              <div className="stat-actions space-y-1">
+                <button
+                  className="btn btn-xs btn-secondary w-full"
+                  onClick={setUSDCAddress}
+                  disabled={isProcessing || !account}
+                >
+                  {isProcessing ? 'Setting...' : 'Set USDC Address'}
+                </button>
+                <button
+                  className="btn btn-xs btn-primary w-full"
+                  onClick={loadUSDCIntoContract}
+                  disabled={isProcessing || !account}
+                >
+                  {isProcessing ? 'Loading...' : 'Load 100 USDC'}
+                </button>
+              </div>
             </div>
             <div className="stat">
               <div className="stat-title">Max Deposit</div>
