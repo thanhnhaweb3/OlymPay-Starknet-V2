@@ -11,11 +11,9 @@ const Header = () => {
   const navigationItems = [
     { name: "StableCoin", path: "/" },
     { name: "On/Off Ramp", path: "/" },
-    { name: "CCIP", path: "/" },
-    { name: "RWA", path: "/" },
-    { name: "Earning", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
     { name: "Balance", path: "/balance" },
+    { name: "Leaderboard", path: "/leaderboard" },
   ];
 
   const handleNavigation = (path: string) => {
@@ -46,7 +44,7 @@ const Header = () => {
                 <button
                   key={item.name}
                   onClick={() => handleNavigation(item.path)}
-                  className="text-base-content hover:text-primary px-3 py-2 rounded-md text-md font-medium transition-colors duration-200"
+                  className="text-base-content hover:text-primary px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200"
                 >
                   {item.name}
                 </button>
